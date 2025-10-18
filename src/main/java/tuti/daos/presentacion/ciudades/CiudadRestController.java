@@ -165,7 +165,7 @@ public class CiudadRestController {
 	{
 		Optional<Ciudad> rta = service.getById(id);
 		if(!rta.isPresent())
-			return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encuentra la persona que desea modificar.");
+			return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encuentra la ciudad que desea modificar.");
 			
 		else
 		{

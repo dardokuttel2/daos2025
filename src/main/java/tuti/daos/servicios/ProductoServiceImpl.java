@@ -83,5 +83,13 @@ public class ProductoServiceImpl implements ProductoService {
 		
 	}
 
+	@Override
+	public List<Producto> getProductosByNombre(String nombre) {
+		if(nombre!= null)
+			return repo.findByNombreContaining(nombre);
+		else
+			return repo.findAll();
+	}
+
 	
 }

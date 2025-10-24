@@ -67,16 +67,19 @@ public class CiudadRestController {
 	 * @throws Exception 
 	 */
 	@GetMapping(produces = { MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<List<Ciudad>> getCuidades() throws Exception
+	public ResponseEntity<List<CiudadResponseDTO>> getCuidades() throws Exception
 	{
 		
 		List<Ciudad> ciudades=service.getAll();
-		if(ciudades.size()>0)
-		{
-			return new ResponseEntity<List<Ciudad>>(ciudades, HttpStatus.OK);
+		List<CiudadResponseDTO> ciudadesDto=new ArrayList<CiudadResponseDTO>();
+		
+		for (Ciudad ciudad : ciudades) {
+			ciudadesDto.add(buildResponse(ciudad));
 		}
-		else
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		
+		return new ResponseEntity<List<CiudadResponseDTO>>(ciudadesDto, HttpStatus.OK);
+		
+		
 	}
 	
 	/**

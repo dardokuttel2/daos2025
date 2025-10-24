@@ -31,5 +31,7 @@ public interface ProductoService {
 
 	void deleteProductoByid(Long id);
 
+	List<Producto> getProductosByNombre(String nombre);
+
 	
 }

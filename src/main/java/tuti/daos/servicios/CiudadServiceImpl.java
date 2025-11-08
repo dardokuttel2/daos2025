@@ -15,8 +15,9 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import tuti.daos.accesoDatos.ICiudadRepo;
 import tuti.daos.entidades.Ciudad;
+import tuti.daos.entidades.Provincia;
 import tuti.daos.excepciones.Excepcion;
-import tuti.daos.presentacion.ciudades.CiudadesBuscarForm;
+import tuti.daos.presentacion.ciudades.CiudadDTO;
 
 @Service
 public class CiudadServiceImpl implements CiudadService {
@@ -28,6 +29,9 @@ public class CiudadServiceImpl implements CiudadService {
 	
 	@Autowired
 	ICiudadRepo repo;
+
+	@Autowired
+	private ProvinciaService provinciaService;
 
 	@Override
 	public List<Ciudad> getAll() {
@@ -44,19 +48,6 @@ public class CiudadServiceImpl implements CiudadService {
 	}
 	
 	
-	@Override
-	public List<Ciudad> filter(CiudadesBuscarForm filter) throws Excepcion
-	{
-		//ver https://docs.spring.io/spring-data/jpa/docs/1.5.0.RELEASE/reference/html/jpa.repositories.html
-		if(filter.getNombre()==null && filter.getProvinciaSeleccionada()==null)
-			//return repo.findAll();
-			throw new Excepcion("Es necesario al menos un filtro",400);
-		else
-			return repo.findByNombreOrIdProvincia(filter.getNombre(),filter.getProvinciaSeleccionada());
-				
-	}
-
-
 
 	@Override
 	public void deleteByid(Long id) {
@@ -69,11 +60,11 @@ public class CiudadServiceImpl implements CiudadService {
 	@Override
 	public void save(Ciudad c) throws Excepcion {
 		if(c.getId()==null && !repo.findByNombreAndIdProvincia(c.getNombre(), c.getProvincia().getId()).isEmpty()) //estoy dando de alta una nueva ciudad y ya existe una igual?
-			throw new Excepcion("Ya existe una ciudad con el mismo nombre, para la misma provincia",400);  
+			throw new Excepcion("Nombre","Existe otra ciudad con el mismo nombre para la misma provincia",400);
 		else
 		{
 			if(!repo.findByNombreAndIdProvinciaAndIdNot(c.getNombre(), c.getProvincia().getId(),c.getId()).isEmpty()) //si edito el nombre, valido que no exista otra con el mismo nombre?
-				throw new Excepcion("Existe otra ciudad con el mismo nombre para la misma provincia",400);
+				throw new Excepcion("Nombre","Existe otra ciudad con el mismo nombre para la misma provincia",400);
 			else
 				repo.save(c);
 		}
@@ -88,8 +79,18 @@ public class CiudadServiceImpl implements CiudadService {
 	}
 	
 	@Override
-	public void insert(Ciudad c) throws Exception {
+	public Long insert(CiudadDTO dto) throws Exception {
 		
+		Ciudad c = dto.toPojo();
+		Optional<Provincia> p = provinciaService.getById(dto.getIdProvincia());
+		if(p.isPresent())
+			c.setProvincia(p.get());
+		else
+		{
+			throw new Excepcion("IdProvincia","La provincia asociada no se encuentra en la base de datos.",404); 
+		}
+		
+		//Esta parte podrìa obviarse si ya se validó en el controller la ciudad a insertar
 		Set<ConstraintViolation<Ciudad>> cv = validator.validate(c);
 		if(cv.size()>0)
 		{
@@ -97,25 +98,39 @@ public class CiudadServiceImpl implements CiudadService {
 			for (ConstraintViolation<Ciudad> constraintViolation : cv) {
 				err+=constraintViolation.getPropertyPath()+": "+constraintViolation.getMessage()+"\n";
 			}
-			throw new Excepcion(err,400);
+			throw new Excepcion("",err,400);
 		}
-		else if(c.getId()!=null)
-		{
-			throw new Excepcion("El id es generado automáticamente por el sistema, no puede ser establecido por el usuario.",400); 
-		}
-//		else if(getById(c.getId()).isPresent())
-//		{
-//			throw new Excepcion("Ya existe una ciudad con ese Id.",400); --- esto es si el id fuera el cp por ejemplo, en este caso es autoincremental así que no espero que venga seteado
-//		}
 		else
-			repo.save(c);
+		{
+			Ciudad ciudadCreada=repo.save(c);
+			return ciudadCreada.getId();
+		}
 	}
 
 
 
 	@Override
-	public void update(Ciudad c) {
-		repo.save(c);
+	public Ciudad update(CiudadDTO dto, Long id) throws Excepcion {
+		
+				
+		Optional<Ciudad> c = repo.findById(id);
+		if(c.isPresent())
+		{
+			
+			Optional<Provincia> p = provinciaService.getById(dto.getIdProvincia());
+			if(p.isPresent())
+			{
+				c.get().setProvincia(p.get());
+				return repo.save(c.get());
+			}
+			else
+				throw new Excepcion("idProvincia","La provincia asociada no se encuentra en la base de datos.",404);
+			
+		}
+		else
+			throw new Excepcion("","No se encuentra la ciudad que desea modificar.",404); //404: not found
+		
+		
 		
 	}
 

@@ -2,11 +2,8 @@ package tuti.daos.presentacion.ciudades;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -15,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,39 +23,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import tuti.daos.entidades.Ciudad;
-import tuti.daos.entidades.Provincia;
-import tuti.daos.error.MensajeError;
+import tuti.daos.error.ErrorAtributo;
 import tuti.daos.excepciones.Excepcion;
 import tuti.daos.presentacion.provincias.ProvinciaRestController;
 import tuti.daos.servicios.CiudadService;
-import tuti.daos.servicios.ProvinciaService;
 
 
 
-
-@RestController
-@RequestMapping("/ciudades")
 /**
  *  Recurso ciudades
  *  @author dardo
  *
  */
-//@Api(tags = { SwaggerConfig.CIUDADES })
-@Tag(name = "Ciudades", description = "Ciudades")
+@RestController
+@RequestMapping("/ciudades") // URL base del recurso
+@Tag(name = "Ciudades", description = "Operaciones CRUD sobre las ciudades") //Documentación Swagger del Recurso
 public class CiudadRestController {
-
 
 	@Autowired
 	private CiudadService service;
-	
-	@Autowired
-	private ProvinciaService provinciaService;
 	
 	/**
 	 * Obtiene todas las ciudades registradas en el sistema.
@@ -66,20 +58,22 @@ public class CiudadRestController {
 	 * @return
 	 * @throws Exception 
 	 */
-	@GetMapping(produces = { MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<List<CiudadResponseDTO>> getCuidades() throws Exception
+	@GetMapping(produces = { MediaType.APPLICATION_JSON_VALUE}) // Operacion GET sobre el recurso Ciudades
+	//Abajo Documentación Swagger de la operación (descripcion basica y formato de respuesta)
+	@Operation(summary = "Obtiene todas las ciudades registradas")  
+	@ApiResponse(responseCode = "200", 
+				description = "Lista de ciudades", 
+				content = @Content(mediaType = "application/json", schema = @Schema(implementation = CiudadResponseDTO.class)))
+	public ResponseEntity<List<CiudadResponseDTO>> getCiudades() throws Exception
 	{
-		
-		List<Ciudad> ciudades=service.getAll();
+		List<Ciudad> ciudades=service.getAll(); 
 		List<CiudadResponseDTO> ciudadesDto=new ArrayList<CiudadResponseDTO>();
 		
 		for (Ciudad ciudad : ciudades) {
-			ciudadesDto.add(buildResponse(ciudad));
+			ciudadesDto.add(buildResponseBody(ciudad)); //para cada entidad, construyo un DTO con informacion bàsica más links HATEOAS
 		}
 		
-		return new ResponseEntity<List<CiudadResponseDTO>>(ciudadesDto, HttpStatus.OK);
-		
-		
+		return new ResponseEntity<List<CiudadResponseDTO>>(ciudadesDto, HttpStatus.OK); //respuesta exitosa (codigo 200)
 	}
 	
 	/**
@@ -89,23 +83,25 @@ public class CiudadRestController {
 	 * @return
 	 * @throws Exception 
 	 */
-	@GetMapping(value = "/{id}", produces = { MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<Ciudad> getById(@PathVariable Long id) throws Exception
+	@GetMapping(value = "/{id}", produces = { MediaType.APPLICATION_JSON_VALUE}) // Operacion GET by Id sobre el recurso Ciudades
+	//Abajo Documentación Swagger de la operación (descripcion basica y formato de respuesta)
+	@Operation(summary = "Obtiene una ciudad a partir de su Id ")
+	@ApiResponses(value = { 
+		    @ApiResponse(responseCode = "200", description = "Ciudad encontrada",content = { @Content(mediaType = "application/json", schema = @Schema(implementation = CiudadResponseDTO.class)) }),
+		    @ApiResponse(responseCode = "404", description = "Ciudad no encontrada",content = { @Content() })
+		})
+	public ResponseEntity<CiudadResponseDTO> getById(@PathVariable Long id) throws Exception
 	{
 		Optional<Ciudad> rta=service.getById(id);
 		if(rta.isPresent())
 		{
 			Ciudad pojo=rta.get();
-			return new ResponseEntity<Ciudad>(pojo, HttpStatus.OK);
+			return new ResponseEntity<CiudadResponseDTO>(buildResponseBody(pojo), HttpStatus.OK);
 		}
 		else
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 	}
 	
-	
-	
-	
-
 	/**
 	 * Inserta una nueva ciudad en la base de datos
 	 * 			curl --location --request POST 'http://localhost:8081/ciudades' 
@@ -119,35 +115,30 @@ public class CiudadRestController {
 	 * @return ciudad insertada o error en otro caso
 	 * @throws Exception 
 	 */
-	@PostMapping
-	public ResponseEntity<Object> insertar( @Valid @RequestBody CiudadDTO dto, BindingResult result) throws Exception
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE) // Operacion POST sobre el recurso Ciudades (alta de una ciudad nueva)
+	//Abajo Documentación Swagger de la operación (descripcion basica y formato de respuesta)
+	@Operation(summary = "Inserta una nueva ciudad en la base de datos")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Ciudad creada correctamente",content = @Content),
+            @ApiResponse(responseCode = "400", description = "Error de validación (Ej, la provincia indicada no existe)",
+        		content = @Content(mediaType = "application/json",schema = @Schema(implementation = ErrorAtributo.class)))
+    })
+    public ResponseEntity<Object> insertar( @Valid @RequestBody CiudadDTO dto, BindingResult result) throws Exception
 	{
-		
 		if(result.hasErrors())
 		{
 			//Dos alternativas:
 			//throw new ResponseStatusException(HttpStatus.BAD_REQUEST, this.formatearError(result));
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body( this.formatearError(result));
-		}
-		
-		Ciudad c = dto.toPojo();
-		Optional<Provincia> p = provinciaService.getById(dto.getIdProvincia());
-		if(p.isPresent())
-			c.setProvincia(p.get());
-		else
-		{
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getError("02", "Provincia Requerida", "La provincia indicada no se encuentra en la base de datos."));
-//				return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La ciudad indicada no se encuentra en la base de datos.");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body( this.formatearErrores(result));
 		}
 		
 		//ahora inserto la nueva ciudad
-		service.insert(c);
-		URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
-				.buildAndExpand(c.getId()).toUri(); //Por convención en REST, se devuelve la  url del recurso recién creado
+		Long idNuevaCiudad = service.insert(dto);
+		
+		//Por convención en una api REST, se devuelve la  url del recurso recién creado
+		URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(idNuevaCiudad).toUri(); 
 
 		return ResponseEntity.created(location).build();//201 (Recurso creado correctamente)
-		
-
 	}
 	
 	/**
@@ -163,38 +154,28 @@ public class CiudadRestController {
 	 * @return ciudad editada o error en otro caso
 	 * @throws Excepcion 
 	 */
-	@PutMapping("/{id}")
-	public ResponseEntity<Object>  actualizar(@RequestBody CiudadDTO dto, @PathVariable long id) throws Exception
+	@PutMapping("/{id}") // Operacion PUT sobre el recurso Ciudades (modificación de una ciudad existente)
+	//Abajo Documentación Swagger de la operación (descripcion basica y formato de respuesta)
+	@Operation(summary = "Actualiza los datos de una ciudad existente")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ciudad actualizada correctamente",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = CiudadResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Error de validación o provincia inexistente",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorAtributo.class))),
+            @ApiResponse(responseCode = "404", description = "Ciudad no encontrada", content = @Content)
+    })
+	public ResponseEntity<Object>  actualizar( @Valid @RequestBody CiudadDTO dto, @PathVariable long id, BindingResult result) throws Exception
 	{
-		Optional<Ciudad> rta = service.getById(id);
-		if(!rta.isPresent())
-			return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encuentra la ciudad que desea modificar.");
-			
-		else
+		if(result.hasErrors())
 		{
-			Ciudad c = dto.toPojo();
-			Optional<Provincia> p = provinciaService.getById(dto.getIdProvincia());
-			if(p.isPresent())
-				c.setProvincia(p.get());
-			else
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getError("02", "Provincia Requerida", "La provincia indicada no se encuentra en la base de datos."));
-//				return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("La ciudad indicada no se encuentra en la base de datos.");
-			
-			if(!c.getId().equals(id))//El dni es el identificador, con lo cual es el único dato que no permito modificar
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getError("03", "Dato no editable", "Noi puede modificar el Id."));
-			service.update(c);
-			return ResponseEntity.ok(buildResponse(c));
+			//Dos alternativas:
+			//throw new ResponseStatusException(HttpStatus.BAD_REQUEST, this.formatearError(result));
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body( this.formatearErrores(result));
 		}
 		
+		Ciudad rta=service.update(dto,id);
+		return ResponseEntity.ok(buildResponseBody(rta));
 	}
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	/**
 	 * Borra la ciudad con el id indicado
@@ -203,34 +184,35 @@ public class CiudadRestController {
 	 * @return ok en caso de borrar exitosamente, error en otro caso
 	 * @throws Excepcion 
 	 */
-	@DeleteMapping("/{id}")
+	@DeleteMapping("/{id}") // Operacion DELETE sobre el recurso Ciudades 
+	//Abajo Documentación Swagger de la operación (descripcion basica y formato de respuesta)
+	@Operation(summary = "Elimina una ciudad existente")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ciudad eliminada correctamente", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Ciudad no encontrada", content = @Content)
+    })
 	public ResponseEntity<String> eliminar(@PathVariable Long id) throws Excepcion
 	{
 		if(!service.getById(id).isPresent())
 			return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("No existe una ciudad con ese id");
 		service.delete(id);
 		
-		return ResponseEntity.ok().build();
+		return ResponseEntity.noContent().build(); // HTTP 204 - el recurso fue eliminado exitosamente y no hay contenido para devolver
 	}
 	
 	
 	
 	
 	
+	// --------------------METODOS AUXILIARES--------------------
 	
-	
-	
-	
-	
-	
-
 	/**
-	 * Métdo auxiliar que toma los datos del pojo y construye el objeto a devolver en la response, con su hipervinculos
+	 * Métdo auxiliar que toma los datos del pojo y construye el objeto a devolver en la response, con su hipervinculos HATEOAS
 	 * @param pojo
 	 * @return
 	 * @throws Excepcion 
 	 */
-	private CiudadResponseDTO buildResponse(Ciudad pojo) throws Excepcion {
+	private CiudadResponseDTO buildResponseBody(Ciudad pojo) throws Excepcion {
 		try {
 			CiudadResponseDTO dto = new CiudadResponseDTO(pojo);
 			 //Self link
@@ -245,45 +227,24 @@ public class CiudadRestController {
 			dto.add(provLink);
 			return dto;
 		} catch (Exception e) {
-			throw new Excepcion(e.getMessage(), 500);
+			throw new Excepcion("",e.getMessage(), 500);
 		}
 	}
 	
-	
-	private String formatearError(BindingResult result) throws JsonProcessingException
+	/**
+	 * Toma los errores resultantes de la validacion mediante Java Bean Validation y los transforma 
+		en una lista de objetos ErrorAtributo, propios del proyecto (objetos mas pequelos y simples, mas adecuados para ser devueltos en el body)
+	 */
+	private List<ErrorAtributo> formatearErrores(BindingResult result)
 	{
-//		primero transformamos la lista de errores devuelta por Java Bean Validation
-		List<Map<String, String>> errores= result.getFieldErrors().stream().map(err -> {
-															Map<String, String> error= new HashMap<>();
-															error.put(err.getField(),err.getDefaultMessage() );
-															return error;
-														}).collect(Collectors.toList());
-		MensajeError e1=new MensajeError();
-		e1.setCodigo("01");
-		e1.setMensajes(errores);
+//		primero transformamos la lista de errores devuelta por Java Bean Validation en nuestra lista de objetos (objetos mas simples para retornar)
+		List<FieldError> errors = result.getFieldErrors();
+		List<ErrorAtributo> respuesta =new ArrayList<ErrorAtributo>();
 		
-		//ahora usamos la librería Jackson para pasar el objeto a json
-		ObjectMapper maper = new ObjectMapper();
-		String json = maper.writeValueAsString(e1);
-		return json;
-	}
-
-	private String getError(String code, String err, String descr) throws JsonProcessingException
-	{
-		MensajeError e1=new MensajeError();
-		e1.setCodigo(code);
-		ArrayList<Map<String,String>> errores=new ArrayList<>();
-		Map<String, String> error=new HashMap<String, String>();
-		error.put(err, descr);
-		errores.add(error);
-		e1.setMensajes(errores);
+		for (FieldError error : errors) {
+			respuesta.add(new ErrorAtributo(error.getField(),error.getDefaultMessage()));
+		}
 		
-		//ahora usamos la librería Jackson para pasar el objeto a json
-				ObjectMapper maper = new ObjectMapper();
-				String json = maper.writeValueAsString(e1);
-				return json;
+		return respuesta;
 	}
-	
-	
-	
 }

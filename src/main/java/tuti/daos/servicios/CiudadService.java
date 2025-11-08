@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import tuti.daos.entidades.Ciudad;
 import tuti.daos.excepciones.Excepcion;
-import tuti.daos.presentacion.ciudades.CiudadesBuscarForm;
+import tuti.daos.presentacion.ciudades.CiudadDTO;
 /**
  * Clase que permite gestionar la entidad Ciudad en el sistema.
  * @author kuttel
@@ -30,8 +30,7 @@ public interface CiudadService {
 	 */
 	Optional<Ciudad> getById(Long idCiudad) throws Excepcion;
 	
-	List<Ciudad> filter(CiudadesBuscarForm filter) throws Excepcion;
-
+	
 	void deleteByid(Long id);
 
 	void save(Ciudad c) throws Excepcion;
@@ -46,11 +45,14 @@ public interface CiudadService {
 	 * Crea una nueva ciudad
 	 * @param p
 	 */
-	void insert(Ciudad c) throws Exception;
+	Long insert(CiudadDTO dto) throws Exception ;
+	
 	/**
 	 * Actualiza datos de una ciudad
 	 * @param p
 	 */
-	void update(Ciudad c);
+	Ciudad update(CiudadDTO c, Long id) throws Exception;
 
+	
+	
 }

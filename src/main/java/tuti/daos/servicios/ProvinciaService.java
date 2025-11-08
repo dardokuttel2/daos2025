@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 import tuti.daos.entidades.Provincia;
-import tuti.daos.excepciones.Excepcion;
-import tuti.daos.presentacion.provincias.ProvinciasBuscarForm;
 /**
  * Clase que permite gestionar la entidad Provincia en el sistema.
  * @author kuttel
@@ -30,9 +28,4 @@ public interface ProvinciaService {
 	 */
 	Optional<Provincia> getById(Long idProv) ;
 
-	List<Provincia> filter(ProvinciasBuscarForm filter) throws Excepcion;
-	
-	void deleteByid(Long id);
-
-	void save(Provincia c) throws Excepcion;
 }

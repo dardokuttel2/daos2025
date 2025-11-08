@@ -17,7 +17,7 @@ public class Excepcion extends Exception{
 		
 	}
 
-	public Excepcion(String mensaje,int statusCode) {
+	public Excepcion(String atributo,String mensaje,int statusCode) {
 		super();
 		this.mensaje = mensaje;
 		this.statusCode = statusCode;

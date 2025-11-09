@@ -10,9 +10,9 @@ public interface ProductoService {
 	List<Producto> getAll();
 
 	/**
-	 * permite obtener una persona determinada 
-	 * @param idPersona identificador de la persona buscada
-	 * @return persona encontrada o null si no encontr{o la persona
+	 * permite obtener un producto determinado 
+	 * @param idPersona identificador del producto buscado
+	 * @return producto encontrad o null si no encontró
 	 * @throws Exception ante un error
 	 */
 	Optional<Producto> getProductoById(Long id) throws Exception;

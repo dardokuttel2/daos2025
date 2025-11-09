@@ -3,7 +3,6 @@ package tuti.daos.presentacion.ciudades;
 import org.springframework.hateoas.Links;
 import org.springframework.hateoas.RepresentationModel;
 
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import tuti.daos.entidades.Ciudad;
 

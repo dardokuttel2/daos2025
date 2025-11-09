@@ -27,7 +27,7 @@ public class ProductoServiceImpl implements ProductoService {
 
 	@Override
 	public List<Producto> getProductosByNombre(String nombre) {
-		if(nombre!= null)
+		if (nombre == null || nombre.trim().isEmpty())
 			return repo.findByNombreContaining(nombre);
 		else
 			return repo.findAll();

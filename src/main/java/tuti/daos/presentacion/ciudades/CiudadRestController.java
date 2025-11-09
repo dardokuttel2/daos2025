@@ -227,7 +227,7 @@ public class CiudadRestController {
 			dto.add(provLink);
 			return dto;
 		} catch (Exception e) {
-			throw new Excepcion("",e.getMessage(), 500);
+		    throw new Excepcion("Ciudad", "Error al construir los enlaces HATEOAS: " + e.getMessage(), 500);
 		}
 	}
 	
@@ -246,5 +246,11 @@ public class CiudadRestController {
 		}
 		
 		return respuesta;
+		
+		//o si quisieramos hacer todo lo anterior de forma mas corta...
+//		 return result.getFieldErrors()
+//                 .stream()
+//                 .map(err -> new ErrorAtributo(err.getField(), err.getDefaultMessage()))
+//                 .toList();
 	}
 }

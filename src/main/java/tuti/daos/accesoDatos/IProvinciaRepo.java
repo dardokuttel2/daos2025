@@ -11,7 +11,7 @@ import tuti.daos.entidades.Provincia;
 public interface IProvinciaRepo extends JpaRepository<Provincia, Long> {
 
 	/**
-	 * busca las ciudades que coincidan con el id indicado
+	 * busca las provincias que coincidan con el id indicado
 	 * @param nombre
 	 * @return
 	 */

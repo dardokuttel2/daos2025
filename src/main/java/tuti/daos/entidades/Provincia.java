@@ -1,5 +1,6 @@
 package tuti.daos.entidades;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.Entity;
@@ -19,7 +20,7 @@ public class Provincia {
 	private String nombre;
 	
 	@OneToMany(mappedBy = "provincia")
-	private List<Ciudad> ciudades;
+	private List<Ciudad> ciudades = new ArrayList<Ciudad>();
 	
 	
 	public Long getId() {
@@ -33,6 +34,11 @@ public class Provincia {
 	}
 	public void setNombre(String nombre) {
 		this.nombre = nombre;
+	}
+	
+	@Override
+	public String toString() {
+	    return nombre ;
 	}
 	
 }

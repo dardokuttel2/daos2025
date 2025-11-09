@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import tuti.daos.entidades.Ciudad;
 
 /**
- * Objeto necesario para insertar o eliminar una persona. 
+ * Objeto necesario para insertar o eliminar una ciudad. 
  * Nótese que en lugar de referenciar al objeto Ciudad, reemplaza ese atributo por el idCiudad, lo cual resulta mas sencillo de representar en JSON
  *
  */
@@ -20,9 +20,6 @@ public class CiudadDTO {
 	private Long idProvincia;
 	
 	
-	
-	
-
 
 	public String getNombre() {
 		return nombre;

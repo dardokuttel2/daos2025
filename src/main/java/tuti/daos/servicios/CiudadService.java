@@ -29,9 +29,7 @@ public interface CiudadService {
 	 * @return Ciudad encontrada
 	 */
 	Optional<Ciudad> getById(Long idCiudad) throws Excepcion;
-	
-	
-	void deleteByid(Long id);
+
 
 	void save(Ciudad c) throws Excepcion;
 

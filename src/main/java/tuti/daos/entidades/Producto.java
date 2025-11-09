@@ -77,4 +77,9 @@ public class Producto {
 		return sdf.format(fechaVencimiento);
 	}
 	
+	@Override
+	public String toString() {
+	    return nombre ;
+	}
+	
 }

@@ -23,7 +23,7 @@ public interface ProvinciaService {
 	
 	/**
 	 * Obtiene una Provincia determinada
-	 * @param idCiudad Identificador de la Provincia buscada
+	 * @param idProvincia  Identificador de la Provincia buscada
 	 * @return Provincia encontrada
 	 */
 	Optional<Provincia> getById(Long idProv) ;

@@ -11,8 +11,6 @@ public class ExceptionHandler {
 
    @org.springframework.web.bind.annotation.ExceptionHandler(Excepcion.class)
    public ResponseEntity<ErrorAtributo> methodArgumentNotValidException(HttpServletRequest request, Excepcion e) {
-	   
-	   
 	   return  ResponseEntity.status(e.getStatusCode()).body(new ErrorAtributo(e.getAtributo(),e.getMensaje()));
    }
 }

@@ -40,38 +40,23 @@ public class CiudadServiceImpl implements CiudadService {
 	}
 
 
-
 	@Override
 	public Optional<Ciudad> getById(Long idCiudad) throws Excepcion {
 
 		return repo.findById(idCiudad);
 	}
 	
-	
-
-	@Override
-	public void deleteByid(Long id) {
-		repo.deleteById(id);
-		
-	}
-
-
 
 	@Override
 	public void save(Ciudad c) throws Excepcion {
-		if(c.getId()==null && !repo.findByNombreAndIdProvincia(c.getNombre(), c.getProvincia().getId()).isEmpty()) //estoy dando de alta una nueva ciudad y ya existe una igual?
+		
+		boolean existeDuplicado =  (c.getId()==null && !repo.findByNombreAndIdProvincia(c.getNombre(), c.getProvincia().getId()).isEmpty()) //estoy dando de alta una nueva ciudad y ya existe una igual?
+									|| (c.getId()!=null && !repo.findByNombreAndIdProvinciaAndIdNot(c.getNombre(), c.getProvincia().getId(),c.getId()).isEmpty()); //si edito el nombre, valido que no exista otra con el mismo nombre?
+		if (existeDuplicado)
 			throw new Excepcion("Nombre","Existe otra ciudad con el mismo nombre para la misma provincia",400);
 		else
-		{
-			if(!repo.findByNombreAndIdProvinciaAndIdNot(c.getNombre(), c.getProvincia().getId(),c.getId()).isEmpty()) //si edito el nombre, valido que no exista otra con el mismo nombre?
-				throw new Excepcion("Nombre","Existe otra ciudad con el mismo nombre para la misma provincia",400);
-			else
-				repo.save(c);
-		}
-		
+			repo.save(c);
 	}
-
-
 
 	@Override
 	public void delete(Long id) {
@@ -116,15 +101,15 @@ public class CiudadServiceImpl implements CiudadService {
 		Optional<Ciudad> c = repo.findById(id);
 		if(c.isPresent())
 		{
-			
+			Ciudad pojo=c.get();
 			Optional<Provincia> p = provinciaService.getById(dto.getIdProvincia());
 			if(p.isPresent())
-			{
-				c.get().setProvincia(p.get());
-				return repo.save(c.get());
-			}
+				pojo.setProvincia(p.get());
 			else
 				throw new Excepcion("idProvincia","La provincia asociada no se encuentra en la base de datos.",404);
+			
+			pojo.setNombre(dto.getNombre());
+			return repo.save(pojo);
 			
 		}
 		else

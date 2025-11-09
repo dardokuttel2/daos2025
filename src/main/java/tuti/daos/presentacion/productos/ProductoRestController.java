@@ -112,7 +112,7 @@ public class ProductoRestController {
 				dto.add(selfLink);
 				return dto;
 			} catch (Exception e) {
-				throw new Excepcion("",e.getMessage(), 500);
+			    throw new Excepcion("Producto", "Error al construir los enlaces HATEOAS: " + e.getMessage(), 500);
 			}
 		}
 }
